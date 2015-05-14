@@ -33,13 +33,13 @@ namespace EmissiveLight
 			this.Fields["lightB"].guiActive = true;
 
 			// HACK for layer culling mask
+			int mask = (1 << 0) | (1 << 3) | (1 << 4) | (1 << 6) | (1 << 7) | (1 << 9) | (1 << 10) | (1 << 15)
+				| (0 << 16) | (1 << 18) | (1 << 19) | (1 << 23) | (1 << 24) | (1 << 28);
 			foreach(Light l in lights)
 			{
 				// some layers might not be used ingame, and some may be used but unnecessary for light
 				// DAS WHY IS A HACK
-				// FIXME still applying light to IVA parts
-				l.cullingMask = (1 << 0) | (1 << 3) | (1 << 4) | (1 << 6) | (1 << 7) | (1 << 9) | (1 << 10) | (1 << 15)
-					| (0 << 16) | (1 << 18) | (1 << 19) | (1 << 23) | (1 << 24) | (1 << 28);
+				l.cullingMask = mask;
 			}
 
 			// for emissive mat HACK
@@ -64,19 +64,18 @@ namespace EmissiveLight
 					l.color = lightColor;
 				}
 
+				// HACK pull intensity from a light to use when making emissive color
+				// otherwise setting it same way as lights results in emissive mat being always on
+				if(referenceLight != null) // you never know
+				{
+					lightIntensity = referenceLight.intensity;
+				}
+				// make color for emissive mat
+				emissiveColor = new Color(lightColor.r * lightIntensity, lightColor.g * lightIntensity, lightColor.b * lightIntensity);
+
 				// iterate emissives list and set colors
 				foreach(Renderer em in emissives)
 				{
-					// HACK pull intensity from a light to use when making emissive color
-					// otherwise setting it same way as lights results in emissive mat being always on
-					if(referenceLight != null) // you never know
-					{
-						lightIntensity = referenceLight.intensity;
-					}
-
-					// make color for emissive mat
-					emissiveColor = new Color(lightColor.r * lightIntensity, lightColor.g * lightIntensity, lightColor.b * lightIntensity);
-
 					// finally set the mat color
 					em.material.SetColor("_EmissiveColor", emissiveColor);
 				}
