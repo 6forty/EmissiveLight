@@ -16,16 +16,18 @@ namespace EmissiveLight
 
 		[KSPField(isPersistant = false)]
 		public string emissiveName;
-		List<Renderer> emissives;
+		List<Renderer> emissives = new List<Renderer>();
 
 		public override void OnStart(PartModule.StartState state)
 		{
 			// ModuleLight's OnStart is probably somewhat important
 			base.OnStart(state);
 
-			// can a Unity model have multiple components with same name?
-			// if not, this can probably be a single Renderer field, would do away with a foreach in LateUpdate that way
-			emissives = part.FindModelComponents<Renderer>(emissiveName).ToList();
+			Renderer[] componentArray = part.FindModelComponents<Renderer>(emissiveName);
+			if(componentArray != null && componentArray.Length != 0)
+				emissives = componentArray.ToList();
+			else
+				Debug.Log("ModuleEmissiveLight: emissiveName " + emissiveName + " found nothing");
 
 			// expose base tweakable fields in-flight
 			this.Fields["lightR"].guiActive = true;
@@ -35,11 +37,14 @@ namespace EmissiveLight
 			// HACK for layer culling mask
 			int mask = (1 << 0) | (1 << 3) | (1 << 4) | (1 << 6) | (1 << 7) | (1 << 9) | (1 << 10) | (1 << 15)
 				| (0 << 16) | (1 << 18) | (1 << 19) | (1 << 23) | (1 << 24) | (1 << 28);
-			foreach(Light l in lights)
+			if(lights != null) // unsure if base ever allows for this to be null, doesn't hurt to check anyway
 			{
-				// some layers might not be used ingame, and some may be used but unnecessary for light
-				// DAS WHY IS A HACK
-				l.cullingMask = mask;
+				foreach(Light l in lights)
+				{
+					// some layers might not be used ingame, and some may be used but unnecessary for light
+					// DAS WHY IS A HACK
+					l.cullingMask = mask;
+				}
 			}
 
 			// for emissive mat HACK
@@ -59,9 +64,12 @@ namespace EmissiveLight
 				// because it ref's a private Color field that tweakables only update in editor scene
 
 				// iterate lights list and set colors
-				foreach(Light l in lights)
+				if(lights != null) // unsure if base ever allows for this to be null, doesn't hurt to check anyway
 				{
-					l.color = lightColor;
+					foreach(Light l in lights)
+					{
+						l.color = lightColor;
+					}
 				}
 
 				// HACK pull intensity from a light to use when making emissive color
